@@ -1,0 +1,1139 @@
+## MySQL Запросы
+
+### 1. getDailyDataHandler - Ежедневные данные
+
+**Запрос для звонков (calls):**
+```sql
+SELECT 
+  DATE(enter_queue_date)   AS report_date,
+  COUNT(*)                 AS total_calls
+FROM call_report
+WHERE enter_queue_date BETWEEN '2025-05-01 00:00:00' AND '2025-05-31 23:59:59'
+  AND type IN ('in', 'abandon')
+  AND queue_name = 'm10'
+GROUP BY report_date
+ORDER BY report_date;
+```
+
+**Запрос для AHT (среднее время обработки):**
+```sql
+SELECT
+  DATE(c.enter_queue_date)                  AS report_date,
+  SEC_TO_TIME(ROUND(AVG(c.call_duration)))   AS avg_call_duration
+FROM call_report c
+WHERE c.enter_queue_date >= '2025-05-15 00:00:00'
+  AND c.enter_queue_date <= '2025-05-25 23:59:59'
+  AND c.type = 'in'
+  AND c.queue_name = 'm10'
+GROUP BY report_date
+ORDER BY report_date;
+```
+
+**Запрос для SL (уровень сервиса):**
+```sql
+SELECT DATE(c.enter_queue_date) AS report_date,
+       ROUND(SUM(CASE WHEN c.queue_wait_time <= 20 THEN 1 ELSE 0 END) / COUNT(*) * 100, 2) AS sl
+FROM call_report c
+WHERE c.enter_queue_date >= '2025-05-15 00:00:00'
+  AND c.enter_queue_date <= '2025-05-25 23:59:59'
+  AND c.type = 'in'
+  AND c.queue_name = 'm10'
+GROUP BY report_date
+ORDER BY report_date;
+```
+
+**Запрос для заброшенных звонков (abandoned):**
+```sql
+SELECT DATE(c.enter_queue_date) AS report_date, COUNT(*) AS total_abandoned
+FROM call_report c
+WHERE c.enter_queue_date >= '2025-05-15 00:00:00'
+  AND c.enter_queue_date <= '2025-05-25 23:59:59'
+  AND c.type = 'abandon'
+  AND c.queue_name = 'm10'
+GROUP BY report_date
+ORDER BY report_date;
+```
+
+**Запрос для чатов:**
+```sql
+SELECT
+  DATE(c.assign_date) AS report_date,
+  COUNT(*)            AS total_chats
+FROM chat_report c
+WHERE c.type = 'in'
+  AND c.assign_date >= '2025-05-15 00:00:00'
+  AND c.assign_date <= '2025-05-25 23:59:59'
+GROUP BY report_date
+ORDER BY report_date;
+```
+
+**Запрос для FRT (время первого ответа):**
+```sql
+SELECT
+  DATE(c.assign_date)                       AS report_date,
+  SEC_TO_TIME(ROUND(AVG(c.chat_frt)))       AS avg_chat_frt
+FROM chat_report c
+WHERE c.assign_date >= '2025-05-15 00:00:00'
+  AND c.assign_date <= '2025-05-25 23:59:59'
+  AND c.type = 'in'
+GROUP BY report_date
+ORDER BY report_date;
+```
+
+**Запрос для RT (время решения):**
+```sql
+SELECT
+  DATE(c.assign_date)                          AS report_date,
+  SEC_TO_TIME(ROUND(AVG(c.resolution_time_total))) AS resolution_time_avg
+FROM chat_report c
+WHERE c.assign_date >= '2025-05-15 00:00:00'
+  AND c.assign_date <= '2025-05-25 23:59:59'
+  AND c.type = 'in'
+GROUP BY report_date
+ORDER BY report_date;
+```
+
+я```sql
+SELECT
+  report_date,
+  COUNT(DISTINCT user_id) AS distinct_agents
+FROM (
+  SELECT
+    DATE(answer_date) AS report_date,
+    user_id
+  FROM call_report
+  WHERE answer_date >= '2025-05-15 00:00:00'
+    AND answer_date <= '2025-05-25 23:59:59'
+    AND type = 'in'
+    AND queue_name = 'm10'
+  UNION
+  SELECT
+    DATE(assign_date) AS report_date,
+    user_id
+  FROM chat_report
+  WHERE assign_date >= '2025-05-15 00:00:00'
+    AND assign_date <= '2025-05-25 23:59:59'
+    AND agent_frt > 0
+) t
+GROUP BY report_date
+ORDER BY report_date;
+```
+
+### 2. getHourlyDataHandler - Почасовые данные
+
+**Запрос для звонков по часам:**
+```sql
+SELECT
+  DATE(c.enter_queue_date) AS Day,
+  
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=0  THEN 1 ELSE 0 END) AS `0:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=1  THEN 1 ELSE 0 END) AS `1:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=2  THEN 1 ELSE 0 END) AS `2:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=3  THEN 1 ELSE 0 END) AS `3:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=4  THEN 1 ELSE 0 END) AS `4:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=5  THEN 1 ELSE 0 END) AS `5:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=6  THEN 1 ELSE 0 END) AS `6:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=7  THEN 1 ELSE 0 END) AS `7:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=8  THEN 1 ELSE 0 END) AS `8:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=9  THEN 1 ELSE 0 END) AS `9:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=10 THEN 1 ELSE 0 END) AS `10:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=11 THEN 1 ELSE 0 END) AS `11:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=12 THEN 1 ELSE 0 END) AS `12:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=13 THEN 1 ELSE 0 END) AS `13:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=14 THEN 1 ELSE 0 END) AS `14:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=15 THEN 1 ELSE 0 END) AS `15:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=16 THEN 1 ELSE 0 END) AS `16:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=17 THEN 1 ELSE 0 END) AS `17:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=18 THEN 1 ELSE 0 END) AS `18:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=19 THEN 1 ELSE 0 END) AS `19:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=20 THEN 1 ELSE 0 END) AS `20:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=21 THEN 1 ELSE 0 END) AS `21:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=22 THEN 1 ELSE 0 END) AS `22:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=23 THEN 1 ELSE 0 END) AS `23:00`
+  
+FROM call_report c
+WHERE c.enter_queue_date >= '2025-05-15 00:00:00'
+  AND c.enter_queue_date <= '2025-05-25 23:59:59'
+  AND c.type = 'in'
+  AND c.queue_name = 'm10'
+GROUP BY Day
+ORDER BY Day;
+```
+
+**Запрос для AHT по часам:**
+```sql
+SELECT
+  DATE(c.enter_queue_date) AS Day,
+
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.enter_queue_date)=0  THEN c.call_duration ELSE NULL END ) ) ) AS `0:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.enter_queue_date)=1  THEN c.call_duration ELSE NULL END ) ) ) AS `1:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.enter_queue_date)=2  THEN c.call_duration ELSE NULL END ) ) ) AS `2:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.enter_queue_date)=3  THEN c.call_duration ELSE NULL END ) ) ) AS `3:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.enter_queue_date)=4  THEN c.call_duration ELSE NULL END ) ) ) AS `4:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.enter_queue_date)=5  THEN c.call_duration ELSE NULL END ) ) ) AS `5:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.enter_queue_date)=6  THEN c.call_duration ELSE NULL END ) ) ) AS `6:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.enter_queue_date)=7  THEN c.call_duration ELSE NULL END ) ) ) AS `7:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.enter_queue_date)=8  THEN c.call_duration ELSE NULL END ) ) ) AS `8:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.enter_queue_date)=9  THEN c.call_duration ELSE NULL END ) ) ) AS `9:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.enter_queue_date)=10 THEN c.call_duration ELSE NULL END ) ) ) AS `10:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.enter_queue_date)=11 THEN c.call_duration ELSE NULL END ) ) ) AS `11:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.enter_queue_date)=12 THEN c.call_duration ELSE NULL END ) ) ) AS `12:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.enter_queue_date)=13 THEN c.call_duration ELSE NULL END ) ) ) AS `13:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.enter_queue_date)=14 THEN c.call_duration ELSE NULL END ) ) ) AS `14:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.enter_queue_date)=15 THEN c.call_duration ELSE NULL END ) ) ) AS `15:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.enter_queue_date)=16 THEN c.call_duration ELSE NULL END ) ) ) AS `16:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.enter_queue_date)=17 THEN c.call_duration ELSE NULL END ) ) ) AS `17:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.enter_queue_date)=18 THEN c.call_duration ELSE NULL END ) ) ) AS `18:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.enter_queue_date)=19 THEN c.call_duration ELSE NULL END ) ) ) AS `19:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.enter_queue_date)=20 THEN c.call_duration ELSE NULL END ) ) ) AS `20:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.enter_queue_date)=21 THEN c.call_duration ELSE NULL END ) ) ) AS `21:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.enter_queue_date)=22 THEN c.call_duration ELSE NULL END ) ) ) AS `22:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.enter_queue_date)=23 THEN c.call_duration ELSE NULL END ) ) ) AS `23:00`
+
+FROM call_report c
+WHERE c.enter_queue_date >= '2025-05-15 00:00:00'
+  AND c.enter_queue_date <= '2025-05-25 23:59:59'
+  AND c.type = 'in'
+  AND c.queue_name = 'm10'
+GROUP BY Day
+ORDER BY Day;
+```
+
+**Запрос для SL по часам:**
+```sql
+SELECT
+  DATE(c.enter_queue_date) AS Day,
+
+  ROUND(
+    SUM(CASE WHEN HOUR(c.enter_queue_date)=0  AND c.queue_wait_time <= 20 THEN 1 ELSE 0 END)
+    / NULLIF(SUM(CASE WHEN HOUR(c.enter_queue_date)=0  THEN 1 ELSE 0 END), 0)
+    * 100,
+    2
+  ) AS `0:00`,
+  
+  ROUND(
+    SUM(CASE WHEN HOUR(c.enter_queue_date)=1  AND c.queue_wait_time <= 20 THEN 1 ELSE 0 END)
+    / NULLIF(SUM(CASE WHEN HOUR(c.enter_queue_date)=1  THEN 1 ELSE 0 END), 0)
+    * 100,
+    2
+  ) AS `1:00`,
+  
+  ROUND(
+    SUM(CASE WHEN HOUR(c.enter_queue_date)=2  AND c.queue_wait_time <= 20 THEN 1 ELSE 0 END)
+    / NULLIF(SUM(CASE WHEN HOUR(c.enter_queue_date)=2  THEN 1 ELSE 0 END), 0)
+    * 100,
+    2
+  ) AS `2:00`,
+
+  /* … аналогично для всех часов … */
+
+  ROUND(
+    SUM(CASE WHEN HOUR(c.enter_queue_date)=23 AND c.queue_wait_time <= 20 THEN 1 ELSE 0 END)
+    / NULLIF(SUM(CASE WHEN HOUR(c.enter_queue_date)=23 THEN 1 ELSE 0 END), 0)
+    * 100,
+    2
+  ) AS `23:00`
+
+FROM call_report c
+WHERE c.enter_queue_date >= '2025-05-15 00:00:00'
+  AND c.enter_queue_date <= '2025-05-25 23:59:59'
+  AND c.type = 'in'
+  AND c.queue_name = 'm10'
+GROUP BY Day
+ORDER BY Day;
+```
+
+**Запрос для заброшенных звонков по часам:**
+```sql
+SELECT
+  DATE(c.enter_queue_date) AS Day,
+
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=0  THEN 1 ELSE 0 END) AS `0:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=1  THEN 1 ELSE 0 END) AS `1:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=2  THEN 1 ELSE 0 END) AS `2:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=3  THEN 1 ELSE 0 END) AS `3:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=4  THEN 1 ELSE 0 END) AS `4:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=5  THEN 1 ELSE 0 END) AS `5:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=6  THEN 1 ELSE 0 END) AS `6:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=7  THEN 1 ELSE 0 END) AS `7:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=8  THEN 1 ELSE 0 END) AS `8:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=9  THEN 1 ELSE 0 END) AS `9:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=10 THEN 1 ELSE 0 END) AS `10:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=11 THEN 1 ELSE 0 END) AS `11:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=12 THEN 1 ELSE 0 END) AS `12:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=13 THEN 1 ELSE 0 END) AS `13:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=14 THEN 1 ELSE 0 END) AS `14:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=15 THEN 1 ELSE 0 END) AS `15:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=16 THEN 1 ELSE 0 END) AS `16:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=17 THEN 1 ELSE 0 END) AS `17:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=18 THEN 1 ELSE 0 END) AS `18:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=19 THEN 1 ELSE 0 END) AS `19:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=20 THEN 1 ELSE 0 END) AS `20:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=21 THEN 1 ELSE 0 END) AS `21:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=22 THEN 1 ELSE 0 END) AS `22:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=23 THEN 1 ELSE 0 END) AS `23:00`
+
+FROM call_report c
+WHERE c.enter_queue_date >= '2025-05-15 00:00:00'
+  AND c.enter_queue_date <= '2025-05-25 23:59:59'
+  AND c.type = 'abandon'
+  AND c.queue_name = 'm10'
+GROUP BY Day
+ORDER BY Day;
+```
+
+**Запрос для чатов по часам:**
+```sql
+SELECT
+  DATE(c.assign_date) AS Day,
+
+  SUM(CASE WHEN HOUR(c.assign_date)=0  THEN 1 ELSE 0 END) AS `0:00`,
+  SUM(CASE WHEN HOUR(c.assign_date)=1  THEN 1 ELSE 0 END) AS `1:00`,
+  SUM(CASE WHEN HOUR(c.assign_date)=2  THEN 1 ELSE 0 END) AS `2:00`,
+  SUM(CASE WHEN HOUR(c.assign_date)=3  THEN 1 ELSE 0 END) AS `3:00`,
+  SUM(CASE WHEN HOUR(c.assign_date)=4  THEN 1 ELSE 0 END) AS `4:00`,
+  SUM(CASE WHEN HOUR(c.assign_date)=5  THEN 1 ELSE 0 END) AS `5:00`,
+  SUM(CASE WHEN HOUR(c.assign_date)=6  THEN 1 ELSE 0 END) AS `6:00`,
+  SUM(CASE WHEN HOUR(c.assign_date)=7  THEN 1 ELSE 0 END) AS `7:00`,
+  SUM(CASE WHEN HOUR(c.assign_date)=8  THEN 1 ELSE 0 END) AS `8:00`,
+  SUM(CASE WHEN HOUR(c.assign_date)=9  THEN 1 ELSE 0 END) AS `9:00`,
+  SUM(CASE WHEN HOUR(c.assign_date)=10 THEN 1 ELSE 0 END) AS `10:00`,
+  SUM(CASE WHEN HOUR(c.assign_date)=11 THEN 1 ELSE 0 END) AS `11:00`,
+  SUM(CASE WHEN HOUR(c.assign_date)=12 THEN 1 ELSE 0 END) AS `12:00`,
+  SUM(CASE WHEN HOUR(c.assign_date)=13 THEN 1 ELSE 0 END) AS `13:00`,
+  SUM(CASE WHEN HOUR(c.assign_date)=14 THEN 1 ELSE 0 END) AS `14:00`,
+  SUM(CASE WHEN HOUR(c.assign_date)=15 THEN 1 ELSE 0 END) AS `15:00`,
+  SUM(CASE WHEN HOUR(c.assign_date)=16 THEN 1 ELSE 0 END) AS `16:00`,
+  SUM(CASE WHEN HOUR(c.assign_date)=17 THEN 1 ELSE 0 END) AS `17:00`,
+  SUM(CASE WHEN HOUR(c.assign_date)=18 THEN 1 ELSE 0 END) AS `18:00`,
+  SUM(CASE WHEN HOUR(c.assign_date)=19 THEN 1 ELSE 0 END) AS `19:00`,
+  SUM(CASE WHEN HOUR(c.assign_date)=20 THEN 1 ELSE 0 END) AS `20:00`,
+  SUM(CASE WHEN HOUR(c.assign_date)=21 THEN 1 ELSE 0 END) AS `21:00`,
+  SUM(CASE WHEN HOUR(c.assign_date)=22 THEN 1 ELSE 0 END) AS `22:00`,
+  SUM(CASE WHEN HOUR(c.assign_date)=23 THEN 1 ELSE 0 END) AS `23:00`
+
+FROM chat_report c
+WHERE c.type = 'in'
+  AND c.assign_date >= '2025-05-15 00:00:00'
+  AND c.assign_date <= '2025-05-25 23:59:59'
+GROUP BY Day
+ORDER BY Day;
+```
+
+**Запрос для FRT по часам:**
+```sql
+SELECT
+  DATE(c.assign_date) AS Day,
+
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=0  THEN c.chat_frt ELSE NULL END ) ) ) AS `0:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=1  THEN c.chat_frt ELSE NULL END ) ) ) AS `1:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=2  THEN c.chat_frt ELSE NULL END ) ) ) AS `2:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=3  THEN c.chat_frt ELSE NULL END ) ) ) AS `3:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=4  THEN c.chat_frt ELSE NULL END ) ) ) AS `4:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=5  THEN c.chat_frt ELSE NULL END ) ) ) AS `5:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=6  THEN c.chat_frt ELSE NULL END ) ) ) AS `6:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=7  THEN c.chat_frt ELSE NULL END ) ) ) AS `7:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=8  THEN c.chat_frt ELSE NULL END ) ) ) AS `8:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=9  THEN c.chat_frt ELSE NULL END ) ) ) AS `9:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=10 THEN c.chat_frt ELSE NULL END ) ) ) AS `10:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=11 THEN c.chat_frt ELSE NULL END ) ) ) AS `11:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=12 THEN c.chat_frt ELSE NULL END ) ) ) AS `12:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=13 THEN c.chat_frt ELSE NULL END ) ) ) AS `13:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=14 THEN c.chat_frt ELSE NULL END ) ) ) AS `14:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=15 THEN c.chat_frt ELSE NULL END ) ) ) AS `15:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=16 THEN c.chat_frt ELSE NULL END ) ) ) AS `16:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=17 THEN c.chat_frt ELSE NULL END ) ) ) AS `17:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=18 THEN c.chat_frt ELSE NULL END ) ) ) AS `18:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=19 THEN c.chat_frt ELSE NULL END ) ) ) AS `19:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=20 THEN c.chat_frt ELSE NULL END ) ) ) AS `20:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=21 THEN c.chat_frt ELSE NULL END ) ) ) AS `21:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=22 THEN c.chat_frt ELSE NULL END ) ) ) AS `22:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=23 THEN c.chat_frt ELSE NULL END ) ) ) AS `23:00`
+
+FROM chat_report c
+WHERE c.assign_date >= '2025-05-15 00:00:00'
+  AND c.assign_date <= '2025-05-25 23:59:59'
+  AND c.type = 'in'
+GROUP BY Day
+ORDER BY Day;
+```
+
+**Запрос для RT по часам:**
+```sql
+SELECT
+  DATE(c.assign_date) AS Day,
+
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=0  THEN c.resolution_time_total ELSE NULL END ) ) ) AS `0:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=1  THEN c.resolution_time_total ELSE NULL END ) ) ) AS `1:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=2  THEN c.resolution_time_total ELSE NULL END ) ) ) AS `2:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=3  THEN c.resolution_time_total ELSE NULL END ) ) ) AS `3:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=4  THEN c.resolution_time_total ELSE NULL END ) ) ) AS `4:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=5  THEN c.resolution_time_total ELSE NULL END ) ) ) AS `5:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=6  THEN c.resolution_time_total ELSE NULL END ) ) ) AS `6:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=7  THEN c.resolution_time_total ELSE NULL END ) ) ) AS `7:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=8  THEN c.resolution_time_total ELSE NULL END ) ) ) AS `8:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=9  THEN c.resolution_time_total ELSE NULL END ) ) ) AS `9:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=10 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `10:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=11 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `11:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=12 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `12:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=13 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `13:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=14 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `14:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=15 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `15:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=16 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `16:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=17 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `17:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=18 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `18:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=19 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `19:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=20 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `20:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=21 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `21:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=22 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `22:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=23 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `23:00`
+
+FROM chat_report c
+WHERE c.assign_date >= '2025-05-15 00:00:00'
+  AND c.assign_date <= '2025-05-25 23:59:59'
+  AND c.type = 'in'
+GROUP BY Day
+ORDER BY Day;
+```
+
+**Запрос для количества агентов по часам:**
+```sql
+SELECT
+  t.Day,
+  
+  COUNT(DISTINCT CASE WHEN t.Hour = 0  THEN t.user_id ELSE NULL END) AS `0:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 1  THEN t.user_id ELSE NULL END) AS `1:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 2  THEN t.user_id ELSE NULL END) AS `2:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 3  THEN t.user_id ELSE NULL END) AS `3:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 4  THEN t.user_id ELSE NULL END) AS `4:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 5  THEN t.user_id ELSE NULL END) AS `5:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 6  THEN t.user_id ELSE NULL END) AS `6:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 7  THEN t.user_id ELSE NULL END) AS `7:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 8  THEN t.user_id ELSE NULL END) AS `8:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 9  THEN t.user_id ELSE NULL END) AS `9:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 10 THEN t.user_id ELSE NULL END) AS `10:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 11 THEN t.user_id ELSE NULL END) AS `11:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 12 THEN t.user_id ELSE NULL END) AS `12:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 13 THEN t.user_id ELSE NULL END) AS `13:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 14 THEN t.user_id ELSE NULL END) AS `14:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 15 THEN t.user_id ELSE NULL END) AS `15:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 16 THEN t.user_id ELSE NULL END) AS `16:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 17 THEN t.user_id ELSE NULL END) AS `17:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 18 THEN t.user_id ELSE NULL END) AS `18:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 19 THEN t.user_id ELSE NULL END) AS `19:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 20 THEN t.user_id ELSE NULL END) AS `20:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 21 THEN t.user_id ELSE NULL END) AS `21:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 22 THEN t.user_id ELSE NULL END) AS `22:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 23 THEN t.user_id ELSE NULL END) AS `23:00`
+
+FROM (
+  
+  SELECT
+    DATE(answer_date)       AS Day,
+    HOUR(answer_date)       AS Hour,
+    user_id
+  FROM call_report
+  WHERE answer_date >= '2025-05-15 00:00:00'
+    AND answer_date <= '2025-05-25 23:59:59'
+    AND type = 'in'
+    AND queue_name = 'm10'
+  
+  UNION
+  
+  SELECT
+    DATE(assign_date)       AS Day,
+    HOUR(assign_date)       AS Hour,
+    user_id
+  FROM chat_report
+  WHERE assign_date >= '2025-05-15 00:00:00'
+    AND assign_date <= '2025-05-25 23:59:59'
+    AND agent_frt > 0
+
+) AS t
+
+GROUP BY t.Day
+ORDER BY t.Day;
+```
+
+
+### 4. onlineDataHandler - Онлайн данные
+
+**Основные запросы для звонков:**
+```sql
+SELECT COUNT(*) FROM report.call_report 
+WHERE DATE(created_at) = DATE(CURRENT_TIMESTAMP - INTERVAL 30 MINUTE) 
+AND type IN ('abandon','in') LIMIT 1;
+```
+
+**Запасной запрос для звонков:**
+```sql
+SELECT COUNT(*) AS total_calls FROM call_report 
+WHERE (type = 'in' OR type = 'abandon') AND enter_queue_date >= ?;
+```
+
+**Основной запрос для заброшенных звонков:**
+```sql
+SELECT COUNT(*) FROM report.call_report 
+WHERE DATE(created_at) = DATE(CURRENT_TIMESTAMP - INTERVAL 30 MINUTE) 
+AND type = 'abandon' LIMIT 1;
+```
+
+**Запасной запрос для заброшенных звонков:**
+```sql
+SELECT COUNT(*) AS total_abandoned FROM call_report 
+WHERE type = 'abandon' AND enter_queue_date >= ?;
+```
+
+**Основной запрос для ожидающих звонков:**
+```sql
+SELECT COUNT(*) FROM call_report 
+WHERE answer_date IS NULL 
+AND DATE(created_at) = DATE(CURRENT_TIMESTAMP - INTERVAL 30 MINUTE) 
+AND type IS NULL LIMIT 1;
+```
+
+**Запасной запрос для ожидающих звонков:**
+```sql
+SELECT COUNT(*) AS waiting_calls FROM call_report 
+WHERE type = 'in' AND enter_queue_date >= ? 
+AND answer_date IS NULL AND queue_wait_time IS NULL;
+```
+
+**Основной запрос для звонков в процессе:**
+```sql
+SELECT COUNT(*) FROM call_report 
+WHERE type = 'in' 
+AND DATE(created_at) = DATE(CURRENT_TIMESTAMP - INTERVAL 30 MINUTE) 
+AND name IS NOT NULL AND hang_up_by IS NULL LIMIT 1;
+```
+
+**Запасной запрос для звонков в процессе:**
+```sql
+SELECT COUNT(*) AS in_progress_calls FROM call_report 
+WHERE type = 'in' AND enter_queue_date >= ? 
+AND answer_date IS NOT NULL AND call_duration IS NULL;
+```
+
+**Запрос для AHT:**
+```sql
+SELECT TIME_FORMAT(SEC_TO_TIME(AVG(call_duration)), '%H:%i:%s') AS avg_call_duration 
+FROM call_report 
+WHERE enter_queue_date >= ? AND type = 'in' AND call_duration IS NOT NULL;
+```
+
+**Основной запрос для SL:**
+```sql
+SELECT ROUND(SUM(CASE WHEN type = 'in' AND queue_wait_time <= 20 THEN 1 ELSE 0 END)/COUNT(*)*100, 2) AS sl 
+FROM call_report 
+WHERE type IN ('in', 'abandon') 
+AND DATE(answer_date) = DATE(CURRENT_TIMESTAMP - INTERVAL 30 MINUTE) 
+AND end_date IS NOT NULL LIMIT 1;
+```
+
+**Запасной запрос для SL:**
+```sql
+SELECT ROUND(SUM(CASE WHEN queue_wait_time <= 20 THEN 1 ELSE 0 END) / COUNT(*) * 100, 2) AS sl 
+FROM call_report 
+WHERE enter_queue_date >= ? AND type = 'in' AND queue_name = 'm10';
+```
+
+**Основной запрос для чатов:**
+```sql
+SELECT COUNT(*) FROM chat_report 
+WHERE channel IN ('INSTAGRAM', 'FB', 'WHATSAPP', 'TELEGRAM') 
+AND DATE(CURRENT_TIMESTAMP - INTERVAL 30 MINUTE) = DATE(assign_date) LIMIT 1;
+```
+
+**Запасной запрос для чатов:**
+```sql
+SELECT COUNT(*) AS total_chats FROM chat_report 
+WHERE type = 'in' AND assign_date >= ?;
+```
+
+**Основной запрос для активных чатов:**
+```sql
+SELECT COUNT(*) FROM omni.conversation 
+WHERE is_active = TRUE 
+AND DATE(created_time) = DATE(CURRENT_TIMESTAMP - INTERVAL 30 MINUTE) 
+AND full_name IS NOT NULL LIMIT 1;
+```
+
+**Запасной запрос для активных чатов:**
+```sql
+SELECT COUNT(*) AS active_chats FROM summary_request 
+WHERE type = 'CHAT' AND status = 'in' AND created_date >= ? 
+AND queue_duration_time = '';
+```
+
+**Основной запрос для ожидающих чатов:**
+```sql
+SELECT COUNT(*) FROM omni.waiting_in_queue LIMIT 1;
+```
+
+**Запасной запрос для ожидающих чатов:**
+```sql
+SELECT COUNT(*) AS waiting_chat FROM chat_report 
+WHERE type = 'in' AND assign_date >= ? AND first_agent_message_date IS NULL;
+```
+
+**Основной запрос для FRT:**
+```sql
+SELECT TIME_FORMAT(SEC_TO_TIME(AVG(agent_frt)), '%H:%i:%s') AS avg_frt 
+FROM chat_report 
+WHERE DATE(assign_date) = DATE(CURRENT_TIMESTAMP - INTERVAL 30 MINUTE) LIMIT 1;
+```
+
+**Запасной запрос для FRT:**
+```sql
+SELECT ROUND(AVG(chat_frt), 2) AS avg_chat_frt FROM chat_report 
+WHERE assign_date >= ? AND chat_frt IS NOT NULL;
+```
+
+**Основной запрос для RT:**
+```sql
+SELECT TIME_FORMAT(SEC_TO_TIME(AVG(agent_resolution_time_total)), '%H:%i:%s') 
+FROM chat_report 
+WHERE DATE(assign_date) = DATE(CURRENT_TIMESTAMP - INTERVAL 30 MINUTE) LIMIT 1;
+```
+
+**Запасной запрос для RT:**
+```sql
+SELECT ROUND(AVG(resolution_time_avg), 2) AS resolution_time_avg 
+FROM chat_report 
+WHERE assign_date >= ? AND resolution_time_avg IS NOT NULL;
+```
+
+### 5. customQueryDataHandler - Классификация данных
+
+**Запрос для классификации звонков:**
+```sql
+SELECT 
+  -- Topic: текст между первым и вторым "/"
+  TRIM(
+    SUBSTRING(
+      COALESCE(rt.category_name, ''),
+
+      -- начало: сразу после первого "/"
+      LOCATE('/', COALESCE(rt.category_name, '')) + 1,
+
+      -- длина: до второго "/", вычитаем позицию первого "/" + 1
+      LOCATE(
+        '/', 
+        COALESCE(rt.category_name, ''), 
+        LOCATE('/', COALESCE(rt.category_name, '')) + 1
+      ) 
+      - LOCATE('/', COALESCE(rt.category_name, '')) 
+      - 1
+    )
+  ) AS Topic,
+
+  -- Subtopic: всё, что идёт после второго "/"
+  TRIM(
+    SUBSTRING(
+      COALESCE(rt.category_name, ''),
+
+      -- старт: сразу после второго "/"
+      LOCATE(
+        '/', 
+        COALESCE(rt.category_name, ''), 
+        LOCATE('/', COALESCE(rt.category_name, '')) + 1
+      ) + 1
+    )
+  ) AS Subtopic,
+
+  DATE(
+    COALESCE(cr.answer_date, cr.enter_queue_date, cr.created_at)
+  ) AS report_date,
+
+  'call' AS source,
+  COUNT(*) AS total
+
+FROM call_report cr
+LEFT JOIN registered_topic rt 
+  ON cr.id = rt.call_report_id
+
+WHERE COALESCE(cr.answer_date, cr.enter_queue_date, cr.created_at) 
+      BETWEEN '2025-05-15 00:00:00' AND '2025-05-25 23:59:59'
+  AND COALESCE(cr.answer_date, cr.enter_queue_date, cr.created_at) IS NOT NULL
+
+GROUP BY 
+  Topic, 
+  Subtopic, 
+  report_date
+
+ORDER BY 
+  report_date;
+```
+
+**Запрос для классификации чатов:**
+```sql
+SELECT
+  -- Topic:
+  CASE
+    -- 1) Если есть минимум два “/”:
+    WHEN (LENGTH(crt.name) - LENGTH(REPLACE(crt.name, '/', ''))) >= 2 THEN
+      TRIM(
+        SUBSTRING(
+          crt.name,
+          LOCATE('/', crt.name) + 1,
+          LOCATE('/', crt.name, LOCATE('/', crt.name) + 1)
+            - LOCATE('/', crt.name)
+            - 1
+        )
+      )
+    -- 2) Если есть ровно один “/”:
+    WHEN (LENGTH(crt.name) - LENGTH(REPLACE(crt.name, '/', ''))) = 1 THEN
+      TRIM(
+        SUBSTRING(
+          crt.name,
+          LOCATE('/', crt.name) + 1
+        )
+      )
+    -- 3) Если нет ни одного “/”:
+    ELSE
+      TRIM(crt.name)
+  END AS Topic,
+
+  -- Subtopic:
+  CASE
+    -- 1) Если есть минимум два “/”:
+    WHEN (LENGTH(crt.name) - LENGTH(REPLACE(crt.name, '/', ''))) >= 2 THEN
+      TRIM(
+        SUBSTRING(
+          crt.name,
+          LOCATE('/', crt.name, LOCATE('/', crt.name) + 1) + 1
+        )
+      )
+    -- 2) Если один или нет “/”:
+    ELSE
+      ''
+  END AS Subtopic,
+
+  DATE(cr.assign_date) AS report_date,
+  'chat'               AS source,
+  COUNT(*)             AS total
+
+FROM chat_report AS cr
+JOIN chat_registered_topic AS crt
+  ON cr.id = crt.chat_report_id
+
+WHERE cr.type = 'in'
+  AND cr.assign_date BETWEEN '2025-05-15 00:00:00' AND '2025-05-25 23:59:59'
+  AND crt.name IS NOT NULL
+
+GROUP BY
+  Topic,
+  Subtopic,
+  report_date
+
+ORDER BY
+  report_date;
+```
+
+**Объединенный запрос для общей классификации:**
+```sql
+SELECT 
+    COALESCE(rt.category_name, '') AS category_or_name,
+    DATE(COALESCE(cr.answer_date, cr.enter_queue_date, cr.created_at)) AS report_date,
+    'call' AS source,
+    COUNT(*) AS total
+FROM call_report cr
+LEFT JOIN registered_topic rt ON cr.id = rt.call_report_id
+WHERE COALESCE(cr.answer_date, cr.enter_queue_date, cr.created_at) >= ?
+  AND COALESCE(cr.answer_date, cr.enter_queue_date, cr.created_at) <= ?
+  AND COALESCE(cr.answer_date, cr.enter_queue_date, cr.created_at) IS NOT NULL
+GROUP BY COALESCE(rt.category_name, ''), report_date
+UNION ALL
+SELECT 
+    COALESCE(crt.name, '') AS category_or_name,
+    DATE(COALESCE(cr.first_agent_message_date, cr.assign_date, cr.first_client_message_date)) AS report_date,
+    'chat' AS source,
+    COUNT(*) AS total
+FROM chat_report cr
+LEFT JOIN chat_registered_topic crt ON cr.id = crt.chat_report_id
+WHERE COALESCE(cr.first_agent_message_date, cr.assign_date, cr.first_client_message_date) >= ?
+  AND COALESCE(cr.first_agent_message_date, cr.assign_date, cr.first_client_message_date) <= ?
+  AND COALESCE(cr.first_agent_message_date, cr.assign_date, cr.first_client_message_date) IS NOT NULL
+GROUP BY COALESCE(crt.name, ''), report_date;
+```
+
+### 6. monthlyDataHandler - Месячные данные
+
+**Запрос для звонков по месяцам:**
+```sql
+SELECT DATE_FORMAT(enter_queue_date, '%Y-%m') AS month,
+       DAY(enter_queue_date) AS day,
+       COUNT(*) AS total_calls
+FROM call_report
+WHERE enter_queue_date >= ? AND enter_queue_date < ?
+  AND (type = 'in' OR type = 'abandon')
+  AND (queue_name = 'm10' OR queue_name = 'm10-shikayet') -- зависит от параметра queue
+GROUP BY month, day;
+```
+
+**Запрос для AHT по месяцам:**
+```sql
+SELECT DATE_FORMAT(enter_queue_date, '%Y-%m') AS month,
+       DAY(enter_queue_date) AS day,
+       AVG(call_duration) AS avg_call_duration
+FROM call_report
+WHERE enter_queue_date >= ? AND enter_queue_date < ?
+  AND type = 'in'
+  AND (queue_name = 'm10' OR queue_name = 'm10-shikayet') -- зависит от параметра queue
+GROUP BY month, day;
+```
+
+**Запрос для SL по месяцам:**
+```sql
+SELECT DATE_FORMAT(enter_queue_date, '%Y-%m') AS month,
+       DAY(enter_queue_date) AS day,
+       ROUND(SUM(CASE WHEN queue_wait_time <= 20 THEN 1 ELSE 0 END) / COUNT(*) * 100, 2) AS sl
+FROM call_report
+WHERE enter_queue_date >= ? AND enter_queue_date < ?
+  AND type = 'in'
+  AND queue_name = 'm10'
+GROUP BY month, day;
+```
+
+**Запрос для заброшенных звонков по месяцам:**
+```sql
+SELECT DATE_FORMAT(enter_queue_date, '%Y-%m') AS month,
+       DAY(enter_queue_date) AS day,
+       COUNT(*) AS total_abandoned
+FROM call_report
+WHERE enter_queue_date >= ? AND enter_queue_date < ?
+  AND type = 'abandon'
+  AND (queue_name = 'm10' OR queue_name = 'm10-shikayet') -- зависит от параметра queue
+GROUP BY month, day;
+```
+
+**Запрос для чатов по месяцам:**
+```sql
+SELECT DATE_FORMAT(assign_date, '%Y-%m') AS month,
+       DAY(assign_date) AS day,
+       COUNT(*) AS total_chats
+FROM chat_report
+WHERE type = 'in'
+  AND assign_date >= ? AND assign_date < ?
+GROUP BY month, day;
+```
+
+**Запрос для FRT по месяцам:**
+```sql
+SELECT DATE_FORMAT(assign_date, '%Y-%m') AS month,
+       DAY(assign_date) AS day,
+       AVG(chat_frt) AS avg_chat_frt
+FROM chat_report
+WHERE assign_date >= ? AND assign_date < ?
+GROUP BY month, day;
+```
+
+**Запрос для RT по месяцам:**
+```sql
+SELECT DATE_FORMAT(assign_date, '%Y-%m') AS month,
+       DAY(assign_date) AS day,
+       AVG(resolution_time_avg) AS resolution_time_avg
+FROM chat_report
+WHERE assign_date >= ? AND assign_date < ?
+GROUP BY month, day;
+```
+
+**Запрос для агентов по месяцам:**
+```sql
+SELECT month, day, COUNT(DISTINCT user_id) AS distinct_agents FROM (
+    SELECT DATE_FORMAT(completed_date, '%Y-%m') AS month, DAY(completed_date) AS day, user_id
+    FROM agent_request
+    WHERE completed_date >= ? AND completed_date < ?
+      AND type = 'in'
+      AND channel_type = 'CALL'
+    UNION
+    SELECT DATE_FORMAT(assign_date, '%Y-%m') AS month, DAY(assign_date) AS day, user_id
+    FROM chat_report
+    WHERE assign_date >= ? AND assign_date < ?
+      AND agent_frt > 0
+) t
+GROUP BY month, day;
+```
+
+## MongoDB Запросы
+
+### customQueryData2Handler - Фильтры для MongoDB
+
+
+**Фильтр для чатов:**
+db.request.aggregate([
+  // 1. Разворачиваем массив classifiers, чтобы работать с каждым элементом отдельно
+  { $unwind: "$classifiers" },
+
+  // 2. Фильтруем по условиям:
+  //    - type = "in"
+  //    - createdDate между 2025-05-31 и 2025-06-05 (включительно)
+  //    - queueName входит в указанный список
+  {
+    $match: {
+      type: "in",
+      createdDate: {
+        $gte: ISODate("2025-05-31T00:00:00Z"),
+        $lte: ISODate("2025-06-05T23:59:59Z")
+      },
+      queueName: {
+        $in: ["m10 Facebook", "WHATSAPP", "m10 Instagram", "telegram"]
+      }
+    }
+  },
+
+  // 3. Проектируем промежуточные поля:
+  //    - “pieces” — результат $split по “/” из поля classifiers.path
+  //    - “len” — количество элементов в этом массиве
+  {
+    $project: {
+      createdDate: 1,
+      queueName: 1,
+      pieces: {
+        $split: [ "$classifiers.path", "/" ]
+      },
+      len: {
+        $size: { $split: [ "$classifiers.path", "/" ] }
+      }
+    }
+  },
+
+  // 4. Вычисляем Topic и Subtopic по правилам:
+  //    - Если len ≥ 3  → Topic = trim(pieces[1]), Subtopic = объединение элементов pieces[2..]
+  //    - Иначе если len = 2 → Topic = trim(pieces[1]), Subtopic = ""
+  //    - Иначе (len = 1) → Topic = trim(pieces[0]), Subtopic = ""
+  {
+    $project: {
+      createdDate: 1,
+      queueName: 1,
+      pieces: 1,
+      len: 1,
+
+      Topic: {
+        $cond: [
+          { $gte: [ "$len", 3 ] },
+          // берем второй элемент (index = 1) и обрезаем пробелы
+          { $trim: { input: { $arrayElemAt: [ "$pieces", 1 ] } } },
+
+          {
+            $cond: [
+              { $eq: [ "$len", 2 ] },
+              // при одном “/” берём всё после первого “/”
+              { $trim: { input: { $arrayElemAt: [ "$pieces", 1 ] } } },
+
+              // при отсутствии “/” — еcть только один элемент
+              { $trim: { input: { $arrayElemAt: [ "$pieces", 0 ] } } }
+            ]
+          }
+        ]
+      },
+
+      Subtopic: {
+        $cond: [
+          { $gte: [ "$len", 3 ] },
+          // объединяем все элементы массива pieces, начиная с index = 2, через “/”
+          {
+            $trim: {
+              input: {
+                $reduce: {
+                  input: { $slice: [ "$pieces", 2, { $subtract: [ "$len", 2 ] } ] },
+                  initialValue: "",
+                  in: {
+                    $cond: [
+                      { $eq: [ "$$value", "" ] },
+                      "$$this",
+                      { $concat: [ "$$value", "/", "$$this" ] }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          // иначе — пустая строка
+          ""
+        ]
+      }
+    }
+  },
+
+  // 5. Преобразуем createdDate в строку “YYYY-MM-DD” с учётом часового пояса Asia/Baku
+  {
+    $addFields: {
+      report_date: {
+        $dateToString: {
+          format: "%Y-%m-%d",
+          date: "$createdDate",
+          timezone: "Asia/Baku"
+        }
+      }
+    }
+  },
+
+  // 6. Группируем по report_date, Topic, Subtopic и считаем количество документов
+  {
+    $group: {
+      _id: {
+        report_date: "$report_date",
+        topic: "$Topic",
+        subtopic: "$Subtopic"
+      },
+      total: { $sum: 1 }
+    }
+  },
+
+  // 7. В финальном выводе раскладываем поля из _id
+  {
+    $project: {
+      _id: 0,
+      report_date: "$_id.report_date",
+      topic: "$_id.topic",
+      subtopic: "$_id.subtopic",
+      total: 1
+    }
+  },
+
+  // 8. Сортируем по дате
+  {
+    $sort: { report_date: 1, topic: 1, subtopic: 1 }
+  }
+]);
+```
+
+**Фильтр для звонков:**
+db.request.aggregate([
+  // 1. Разворачиваем массив classifiers, чтобы работать с каждым элементом отдельно
+  { $unwind: "$classifiers" },
+
+  // 2. Фильтруем по условиям:
+  //    - type = "in"
+  //    - createdDate между 2025-05-31 и 2025-06-05 (включительно)
+  //    - queueName входит в указанный список
+  {
+    $match: {
+      type: "in",
+      createdDate: {
+        $gte: ISODate("2025-05-31T00:00:00Z"),
+        $lte: ISODate("2025-06-05T23:59:59Z")
+      },
+      queueName: {
+        $in: ["m10"]
+      }
+    }
+  },
+
+  // 3. Проектируем промежуточные поля:
+  //    - “pieces” — результат $split по “/” из поля classifiers.path
+  //    - “len” — количество элементов в этом массиве
+  {
+    $project: {
+      createdDate: 1,
+      queueName: 1,
+      pieces: {
+        $split: [ "$classifiers.path", "/" ]
+      },
+      len: {
+        $size: { $split: [ "$classifiers.path", "/" ] }
+      }
+    }
+  },
+
+  // 4. Вычисляем Topic и Subtopic по правилам:
+  //    - Если len ≥ 3  → Topic = trim(pieces[1]), Subtopic = объединение элементов pieces[2..]
+  //    - Иначе если len = 2 → Topic = trim(pieces[1]), Subtopic = ""
+  //    - Иначе (len = 1) → Topic = trim(pieces[0]), Subtopic = ""
+  {
+    $project: {
+      createdDate: 1,
+      queueName: 1,
+      pieces: 1,
+      len: 1,
+
+      Topic: {
+        $cond: [
+          { $gte: [ "$len", 3 ] },
+          // берем второй элемент (index = 1) и обрезаем пробелы
+          { $trim: { input: { $arrayElemAt: [ "$pieces", 1 ] } } },
+
+          {
+            $cond: [
+              { $eq: [ "$len", 2 ] },
+              // при одном “/” берём всё после первого “/”
+              { $trim: { input: { $arrayElemAt: [ "$pieces", 1 ] } } },
+
+              // при отсутствии “/” — еcть только один элемент
+              { $trim: { input: { $arrayElemAt: [ "$pieces", 0 ] } } }
+            ]
+          }
+        ]
+      },
+
+      Subtopic: {
+        $cond: [
+          { $gte: [ "$len", 3 ] },
+          // объединяем все элементы массива pieces, начиная с index = 2, через “/”
+          {
+            $trim: {
+              input: {
+                $reduce: {
+                  input: { $slice: [ "$pieces", 2, { $subtract: [ "$len", 2 ] } ] },
+                  initialValue: "",
+                  in: {
+                    $cond: [
+                      { $eq: [ "$$value", "" ] },
+                      "$$this",
+                      { $concat: [ "$$value", "/", "$$this" ] }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          // иначе — пустая строка
+          ""
+        ]
+      }
+    }
+  },
+
+  // 5. Преобразуем createdDate в строку “YYYY-MM-DD” с учётом часового пояса Asia/Baku
+  {
+    $addFields: {
+      report_date: {
+        $dateToString: {
+          format: "%Y-%m-%d",
+          date: "$createdDate",
+          timezone: "Asia/Baku"
+        }
+      }
+    }
+  },
+
+  // 6. Группируем по report_date, Topic, Subtopic и считаем количество документов
+  {
+    $group: {
+      _id: {
+        report_date: "$report_date",
+        topic: "$Topic",
+        subtopic: "$Subtopic"
+      },
+      total: { $sum: 1 }
+    }
+  },
+
+  // 7. В финальном выводе раскладываем поля из _id
+  {
+    $project: {
+      _id: 0,
+      report_date: "$_id.report_date",
+      topic: "$_id.topic",
+      subtopic: "$_id.subtopic",
+      total: 1
+    }
+  },
+
+  // 8. Сортируем по дате
+  {
+    $sort: { report_date: 1, topic: 1, subtopic: 1 }
+  }
+]);
+```

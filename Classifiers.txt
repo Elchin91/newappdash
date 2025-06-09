@@ -1,0 +1,358 @@
+## MongoDB Запросы
+
+
+**Фильтр для чатов:**
+db.request.aggregate([
+  // 1. "Разворачиваем" массив classifiers
+  { $unwind: "$classifiers" },
+
+  // 2. Вычисляем локальную дату по Baku
+  {
+    $addFields: {
+      report_date: {
+        $dateToString: {
+          format:   "%Y-%m-%d",
+          date:     "$createdDate",
+          timezone: "Asia/Baku"
+        }
+      }
+    }
+  },
+
+  // 3. Отбираем только нужные документы по локальной дате и очередям
+  {
+    $match: {
+      type:      "in",
+      queueName: { $in: ["m10 Facebook", "WHATSAPP", "m10 Instagram", "telegram"] },
+      report_date: {
+        $gte: "2025-05-31",
+        $lte: "2025-06-05"
+      }
+    }
+  },
+
+  // 4. Проектируем для разбора classifiers.path
+  {
+    $project: {
+      report_date: 1,
+      queueName:   1,
+      pieces:      { $split: [ "$classifiers.path", "/" ] },
+      len:         { $size: { $split: [ "$classifiers.path", "/" ] } }
+    }
+  },
+
+  // 5. Определяем Topic и Subtopic
+  {
+    $project: {
+      report_date: 1,
+      queueName:   1,
+
+      Topic: {
+        $cond: [
+          { $gte: ["$len", 3] },
+          { $trim: { input: { $arrayElemAt: ["$pieces", 1] } } },
+          {
+            $cond: [
+              { $eq: ["$len", 2] },
+              { $trim: { input: { $arrayElemAt: ["$pieces", 1] } } },
+              { $trim: { input: { $arrayElemAt: ["$pieces", 0] } } }
+            ]
+          }
+        ]
+      },
+
+      Subtopic: {
+        $cond: [
+          { $gte: ["$len", 3] },
+          {
+            $trim: {
+              input: {
+                $reduce: {
+                  input: { $slice: ["$pieces", 2, { $subtract: ["$len", 2] }] },
+                  initialValue: "",
+                  in: {
+                    $cond: [
+                      { $eq: ["$$value", ""] },
+                      "$$this",
+                      { $concat: ["$$value", "/", "$$this"] }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          ""
+        ]
+      }
+    }
+  },
+
+  // 6. Группируем и считаем
+  {
+    $group: {
+      _id: {
+        report_date: "$report_date",
+        topic:       "$Topic",
+        subtopic:    "$Subtopic"
+      },
+      total: { $sum: 1 }
+    }
+  },
+
+  // 7. Разворачиваем _id в поля
+  {
+    $project: {
+      _id:        0,
+      report_date: "$_id.report_date",
+      topic:       "$_id.topic",
+      subtopic:    "$_id.subtopic",
+      total:      1
+    }
+  },
+
+  // 8. Сортируем по дате, теме, подтеме
+  {
+    $sort: { report_date: 1, topic: 1, subtopic: 1 }
+  }
+]);
+
+
+```
+
+
+
+**Фильтр для звонков: очередь "m10"**
+db.request.aggregate([
+  // 1. Разворачиваем массив classifiers
+  { $unwind: "$classifiers" },
+
+  // 2. Добавляем локальную строку report_date по часовому поясу Baku
+  {
+    $addFields: {
+      report_date: {
+        $dateToString: {
+          format: "%Y-%m-%d",
+          date:   "$createdDate",
+          timezone: "Asia/Baku"
+        }
+      }
+    }
+  },
+
+  // 3. Отбираем нужные документы уже по report_date
+  {
+    $match: {
+      type:      "in",
+      queueName: "m10",
+      report_date: {
+        $gte: "2025-05-31",
+        $lte: "2025-06-05"
+      }
+    }
+  },
+
+  // 4. Проектируем pieces и len для парсинга path
+  {
+    $project: {
+      report_date: 1,
+      queueName:   1,
+      pieces: { $split: [ "$classifiers.path", "/" ] },
+      len:    { $size: { $split: [ "$classifiers.path", "/" ] } }
+    }
+  },
+
+  // 5. Вычисляем Topic и Subtopic
+  {
+    $project: {
+      report_date: 1,
+      queueName:   1,
+
+      Topic: {
+        $cond: [
+          { $gte: [ "$len", 3 ] },
+          { $trim: { input: { $arrayElemAt: [ "$pieces", 1 ] } } },
+          {
+            $cond: [
+              { $eq: [ "$len", 2 ] },
+              { $trim: { input: { $arrayElemAt: [ "$pieces", 1 ] } } },
+              { $trim: { input: { $arrayElemAt: [ "$pieces", 0 ] } } }
+            ]
+          }
+        ]
+      },
+
+      Subtopic: {
+        $cond: [
+          { $gte: [ "$len", 3 ] },
+          {
+            $trim: {
+              input: {
+                $reduce: {
+                  input: { $slice: [ "$pieces", 2, { $subtract: [ "$len", 2 ] } ] },
+                  initialValue: "",
+                  in: {
+                    $cond: [
+                      { $eq: [ "$$value", "" ] },
+                      "$$this",
+                      { $concat: [ "$$value", "/", "$$this" ] }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          ""
+        ]
+      }
+    }
+  },
+
+  // 6. Группируем и считаем
+  {
+    $group: {
+      _id: {
+        report_date: "$report_date",
+        topic:       "$Topic",
+        subtopic:    "$Subtopic"
+      },
+      total: { $sum: 1 }
+    }
+  },
+
+  // 7. Финальный проект
+  {
+    $project: {
+      _id:        0,
+      report_date: "$_id.report_date",
+      topic:       "$_id.topic",
+      subtopic:    "$_id.subtopic",
+      total:      1
+    }
+  },
+
+  // 8. Сортировка
+  {
+    $sort: { report_date: 1, topic: 1, subtopic: 1 }
+  }
+]);
+
+```
+
+
+
+**Фильтр для звонков: очередь "m10-shikayet" **
+db.request.aggregate([
+  // 1. Разворачиваем массив classifiers
+  { $unwind: "$classifiers" },
+
+  // 2. Добавляем локальную строку report_date по часовому поясу Baku
+  {
+    $addFields: {
+      report_date: {
+        $dateToString: {
+          format: "%Y-%m-%d",
+          date:   "$createdDate",
+          timezone: "Asia/Baku"
+        }
+      }
+    }
+  },
+
+  // 3. Отбираем нужные документы уже по report_date
+  {
+    $match: {
+      type:      "in",
+      queueName: "m10-shikayet",
+      report_date: {
+        $gte: "2025-05-31",
+        $lte: "2025-06-05"
+      }
+    }
+  },
+
+  // 4. Проектируем pieces и len для парсинга path
+  {
+    $project: {
+      report_date: 1,
+      queueName:   1,
+      pieces: { $split: [ "$classifiers.path", "/" ] },
+      len:    { $size: { $split: [ "$classifiers.path", "/" ] } }
+    }
+  },
+
+  // 5. Вычисляем Topic и Subtopic
+  {
+    $project: {
+      report_date: 1,
+      queueName:   1,
+
+      Topic: {
+        $cond: [
+          { $gte: [ "$len", 3 ] },
+          { $trim: { input: { $arrayElemAt: [ "$pieces", 1 ] } } },
+          {
+            $cond: [
+              { $eq: [ "$len", 2 ] },
+              { $trim: { input: { $arrayElemAt: [ "$pieces", 1 ] } } },
+              { $trim: { input: { $arrayElemAt: [ "$pieces", 0 ] } } }
+            ]
+          }
+        ]
+      },
+
+      Subtopic: {
+        $cond: [
+          { $gte: [ "$len", 3 ] },
+          {
+            $trim: {
+              input: {
+                $reduce: {
+                  input: { $slice: [ "$pieces", 2, { $subtract: [ "$len", 2 ] } ] },
+                  initialValue: "",
+                  in: {
+                    $cond: [
+                      { $eq: [ "$$value", "" ] },
+                      "$$this",
+                      { $concat: [ "$$value", "/", "$$this" ] }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          ""
+        ]
+      }
+    }
+  },
+
+  // 6. Группируем и считаем
+  {
+    $group: {
+      _id: {
+        report_date: "$report_date",
+        topic:       "$Topic",
+        subtopic:    "$Subtopic"
+      },
+      total: { $sum: 1 }
+    }
+  },
+
+  // 7. Финальный проект
+  {
+    $project: {
+      _id:        0,
+      report_date: "$_id.report_date",
+      topic:       "$_id.topic",
+      subtopic:    "$_id.subtopic",
+      total:      1
+    }
+  },
+
+  // 8. Сортировка
+  {
+    $sort: { report_date: 1, topic: 1, subtopic: 1 }
+  }
+]);
+
+```

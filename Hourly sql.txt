@@ -1,0 +1,333 @@
+**Запрос для звонков по часам:**
+```sql
+SELECT
+  DATE(c.enter_queue_date) AS Day,
+  
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=0  THEN 1 ELSE 0 END) AS `0:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=1  THEN 1 ELSE 0 END) AS `1:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=2  THEN 1 ELSE 0 END) AS `2:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=3  THEN 1 ELSE 0 END) AS `3:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=4  THEN 1 ELSE 0 END) AS `4:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=5  THEN 1 ELSE 0 END) AS `5:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=6  THEN 1 ELSE 0 END) AS `6:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=7  THEN 1 ELSE 0 END) AS `7:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=8  THEN 1 ELSE 0 END) AS `8:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=9  THEN 1 ELSE 0 END) AS `9:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=10 THEN 1 ELSE 0 END) AS `10:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=11 THEN 1 ELSE 0 END) AS `11:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=12 THEN 1 ELSE 0 END) AS `12:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=13 THEN 1 ELSE 0 END) AS `13:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=14 THEN 1 ELSE 0 END) AS `14:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=15 THEN 1 ELSE 0 END) AS `15:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=16 THEN 1 ELSE 0 END) AS `16:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=17 THEN 1 ELSE 0 END) AS `17:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=18 THEN 1 ELSE 0 END) AS `18:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=19 THEN 1 ELSE 0 END) AS `19:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=20 THEN 1 ELSE 0 END) AS `20:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=21 THEN 1 ELSE 0 END) AS `21:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=22 THEN 1 ELSE 0 END) AS `22:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=23 THEN 1 ELSE 0 END) AS `23:00`
+  
+FROM call_report c
+WHERE c.enter_queue_date >= '2025-05-15 00:00:00'
+  AND c.enter_queue_date <= '2025-05-25 23:59:59'
+  AND c.type = 'in'
+  AND c.queue_name = 'm10'
+GROUP BY Day
+ORDER BY Day;
+```
+
+**Запрос для AHT по часам:**
+```sql
+SELECT
+  DATE(c.answer_date) AS Day,
+
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.answer_date)=0  THEN c.call_duration ELSE NULL END ) ) ) AS `0:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.answer_date)=1  THEN c.call_duration ELSE NULL END ) ) ) AS `1:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.answer_date)=2  THEN c.call_duration ELSE NULL END ) ) ) AS `2:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.answer_date)=3  THEN c.call_duration ELSE NULL END ) ) ) AS `3:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.answer_date)=4  THEN c.call_duration ELSE NULL END ) ) ) AS `4:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.answer_date)=5  THEN c.call_duration ELSE NULL END ) ) ) AS `5:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.answer_date)=6  THEN c.call_duration ELSE NULL END ) ) ) AS `6:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.answer_date)=7  THEN c.call_duration ELSE NULL END ) ) ) AS `7:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.answer_date)=8  THEN c.call_duration ELSE NULL END ) ) ) AS `8:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.answer_date)=9  THEN c.call_duration ELSE NULL END ) ) ) AS `9:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.answer_date)=10 THEN c.call_duration ELSE NULL END ) ) ) AS `10:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.answer_date)=11 THEN c.call_duration ELSE NULL END ) ) ) AS `11:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.answer_date)=12 THEN c.call_duration ELSE NULL END ) ) ) AS `12:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.answer_date)=13 THEN c.call_duration ELSE NULL END ) ) ) AS `13:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.answer_date)=14 THEN c.call_duration ELSE NULL END ) ) ) AS `14:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.answer_date)=15 THEN c.call_duration ELSE NULL END ) ) ) AS `15:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.answer_date)=16 THEN c.call_duration ELSE NULL END ) ) ) AS `16:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.answer_date)=17 THEN c.call_duration ELSE NULL END ) ) ) AS `17:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.answer_date)=18 THEN c.call_duration ELSE NULL END ) ) ) AS `18:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.answer_date)=19 THEN c.call_duration ELSE NULL END ) ) ) AS `19:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.answer_date)=20 THEN c.call_duration ELSE NULL END ) ) ) AS `20:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.answer_date)=21 THEN c.call_duration ELSE NULL END ) ) ) AS `21:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.answer_date)=22 THEN c.call_duration ELSE NULL END ) ) ) AS `22:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.answer_date)=23 THEN c.call_duration ELSE NULL END ) ) ) AS `23:00`
+
+FROM call_report c
+WHERE c.answer_date >= '2025-05-15 00:00:00'
+  AND c.answer_date <= '2025-05-25 23:59:59'
+  AND c.type = 'in'
+  AND c.queue_name = 'm10'
+GROUP BY Day
+ORDER BY Day;
+```
+
+**Запрос для SL по часам:**
+```sql
+SELECT
+  DATE(c.enter_queue_date) AS Day,
+
+  ROUND(
+    SUM(CASE WHEN HOUR(c.enter_queue_date)=0  AND c.queue_wait_time <= 20 THEN 1 ELSE 0 END)
+    / NULLIF(SUM(CASE WHEN HOUR(c.enter_queue_date)=0  THEN 1 ELSE 0 END), 0)
+    * 100,
+    2
+  ) AS `0:00`,
+  
+  ROUND(
+    SUM(CASE WHEN HOUR(c.enter_queue_date)=1  AND c.queue_wait_time <= 20 THEN 1 ELSE 0 END)
+    / NULLIF(SUM(CASE WHEN HOUR(c.enter_queue_date)=1  THEN 1 ELSE 0 END), 0)
+    * 100,
+    2
+  ) AS `1:00`,
+  
+  ROUND(
+    SUM(CASE WHEN HOUR(c.enter_queue_date)=2  AND c.queue_wait_time <= 20 THEN 1 ELSE 0 END)
+    / NULLIF(SUM(CASE WHEN HOUR(c.enter_queue_date)=2  THEN 1 ELSE 0 END), 0)
+    * 100,
+    2
+  ) AS `2:00`,
+
+  /* … аналогично для всех часов … */
+
+  ROUND(
+    SUM(CASE WHEN HOUR(c.enter_queue_date)=23 AND c.queue_wait_time <= 20 THEN 1 ELSE 0 END)
+    / NULLIF(SUM(CASE WHEN HOUR(c.enter_queue_date)=23 THEN 1 ELSE 0 END), 0)
+    * 100,
+    2
+  ) AS `23:00`
+
+FROM call_report c
+WHERE c.enter_queue_date >= '2025-05-15 00:00:00'
+  AND c.enter_queue_date <= '2025-05-25 23:59:59'
+  AND c.type = 'in'
+  AND c.queue_name = 'm10'
+GROUP BY Day
+ORDER BY Day;
+```
+
+**Запрос для заброшенных звонков по часам:**
+```sql
+SELECT
+  DATE(c.enter_queue_date) AS Day,
+
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=0  THEN 1 ELSE 0 END) AS `0:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=1  THEN 1 ELSE 0 END) AS `1:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=2  THEN 1 ELSE 0 END) AS `2:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=3  THEN 1 ELSE 0 END) AS `3:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=4  THEN 1 ELSE 0 END) AS `4:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=5  THEN 1 ELSE 0 END) AS `5:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=6  THEN 1 ELSE 0 END) AS `6:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=7  THEN 1 ELSE 0 END) AS `7:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=8  THEN 1 ELSE 0 END) AS `8:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=9  THEN 1 ELSE 0 END) AS `9:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=10 THEN 1 ELSE 0 END) AS `10:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=11 THEN 1 ELSE 0 END) AS `11:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=12 THEN 1 ELSE 0 END) AS `12:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=13 THEN 1 ELSE 0 END) AS `13:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=14 THEN 1 ELSE 0 END) AS `14:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=15 THEN 1 ELSE 0 END) AS `15:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=16 THEN 1 ELSE 0 END) AS `16:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=17 THEN 1 ELSE 0 END) AS `17:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=18 THEN 1 ELSE 0 END) AS `18:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=19 THEN 1 ELSE 0 END) AS `19:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=20 THEN 1 ELSE 0 END) AS `20:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=21 THEN 1 ELSE 0 END) AS `21:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=22 THEN 1 ELSE 0 END) AS `22:00`,
+  SUM(CASE WHEN HOUR(c.enter_queue_date)=23 THEN 1 ELSE 0 END) AS `23:00`
+
+FROM call_report c
+WHERE c.enter_queue_date >= '2025-05-15 00:00:00'
+  AND c.enter_queue_date <= '2025-05-25 23:59:59'
+  AND c.type = 'abandon'
+  AND c.queue_name = 'm10'
+GROUP BY Day
+ORDER BY Day;
+```
+
+**Запрос для чатов по часам:**
+```sql
+SELECT
+  DATE(c.created_date) AS Day,
+
+  SUM(CASE WHEN HOUR(c.created_date)=0  THEN 1 ELSE 0 END) AS `0:00`,
+  SUM(CASE WHEN HOUR(c.created_date)=1  THEN 1 ELSE 0 END) AS `1:00`,
+  SUM(CASE WHEN HOUR(c.created_date)=2  THEN 1 ELSE 0 END) AS `2:00`,
+  SUM(CASE WHEN HOUR(c.created_date)=3  THEN 1 ELSE 0 END) AS `3:00`,
+  SUM(CASE WHEN HOUR(c.created_date)=4  THEN 1 ELSE 0 END) AS `4:00`,
+  SUM(CASE WHEN HOUR(c.created_date)=5  THEN 1 ELSE 0 END) AS `5:00`,
+  SUM(CASE WHEN HOUR(c.created_date)=6  THEN 1 ELSE 0 END) AS `6:00`,
+  SUM(CASE WHEN HOUR(c.created_date)=7  THEN 1 ELSE 0 END) AS `7:00`,
+  SUM(CASE WHEN HOUR(c.created_date)=8  THEN 1 ELSE 0 END) AS `8:00`,
+  SUM(CASE WHEN HOUR(c.created_date)=9  THEN 1 ELSE 0 END) AS `9:00`,
+  SUM(CASE WHEN HOUR(c.created_date)=10 THEN 1 ELSE 0 END) AS `10:00`,
+  SUM(CASE WHEN HOUR(c.created_date)=11 THEN 1 ELSE 0 END) AS `11:00`,
+  SUM(CASE WHEN HOUR(c.created_date)=12 THEN 1 ELSE 0 END) AS `12:00`,
+  SUM(CASE WHEN HOUR(c.created_date)=13 THEN 1 ELSE 0 END) AS `13:00`,
+  SUM(CASE WHEN HOUR(c.created_date)=14 THEN 1 ELSE 0 END) AS `14:00`,
+  SUM(CASE WHEN HOUR(c.created_date)=15 THEN 1 ELSE 0 END) AS `15:00`,
+  SUM(CASE WHEN HOUR(c.created_date)=16 THEN 1 ELSE 0 END) AS `16:00`,
+  SUM(CASE WHEN HOUR(c.created_date)=17 THEN 1 ELSE 0 END) AS `17:00`,
+  SUM(CASE WHEN HOUR(c.created_date)=18 THEN 1 ELSE 0 END) AS `18:00`,
+  SUM(CASE WHEN HOUR(c.created_date)=19 THEN 1 ELSE 0 END) AS `19:00`,
+  SUM(CASE WHEN HOUR(c.created_date)=20 THEN 1 ELSE 0 END) AS `20:00`,
+  SUM(CASE WHEN HOUR(c.created_date)=21 THEN 1 ELSE 0 END) AS `21:00`,
+  SUM(CASE WHEN HOUR(c.created_date)=22 THEN 1 ELSE 0 END) AS `22:00`,
+  SUM(CASE WHEN HOUR(c.created_date)=23 THEN 1 ELSE 0 END) AS `23:00`
+
+FROM chat_report c
+WHERE c.type = 'in'
+  AND c.created_date >= '2025-05-15 00:00:00'
+  AND c.created_date <= '2025-05-25 23:59:59'
+GROUP BY Day
+ORDER BY Day;
+```
+
+**Запрос для FRT по часам:**
+```sql
+SELECT
+  DATE(c.assign_date) AS Day,
+
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=0  THEN c.chat_frt ELSE NULL END ) ) ) AS `0:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=1  THEN c.chat_frt ELSE NULL END ) ) ) AS `1:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=2  THEN c.chat_frt ELSE NULL END ) ) ) AS `2:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=3  THEN c.chat_frt ELSE NULL END ) ) ) AS `3:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=4  THEN c.chat_frt ELSE NULL END ) ) ) AS `4:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=5  THEN c.chat_frt ELSE NULL END ) ) ) AS `5:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=6  THEN c.chat_frt ELSE NULL END ) ) ) AS `6:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=7  THEN c.chat_frt ELSE NULL END ) ) ) AS `7:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=8  THEN c.chat_frt ELSE NULL END ) ) ) AS `8:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=9  THEN c.chat_frt ELSE NULL END ) ) ) AS `9:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=10 THEN c.chat_frt ELSE NULL END ) ) ) AS `10:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=11 THEN c.chat_frt ELSE NULL END ) ) ) AS `11:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=12 THEN c.chat_frt ELSE NULL END ) ) ) AS `12:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=13 THEN c.chat_frt ELSE NULL END ) ) ) AS `13:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=14 THEN c.chat_frt ELSE NULL END ) ) ) AS `14:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=15 THEN c.chat_frt ELSE NULL END ) ) ) AS `15:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=16 THEN c.chat_frt ELSE NULL END ) ) ) AS `16:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=17 THEN c.chat_frt ELSE NULL END ) ) ) AS `17:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=18 THEN c.chat_frt ELSE NULL END ) ) ) AS `18:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=19 THEN c.chat_frt ELSE NULL END ) ) ) AS `19:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=20 THEN c.chat_frt ELSE NULL END ) ) ) AS `20:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=21 THEN c.chat_frt ELSE NULL END ) ) ) AS `21:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=22 THEN c.chat_frt ELSE NULL END ) ) ) AS `22:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=23 THEN c.chat_frt ELSE NULL END ) ) ) AS `23:00`
+
+FROM chat_report c
+WHERE c.assign_date >= '2025-05-15 00:00:00'
+  AND c.assign_date <= '2025-05-25 23:59:59'
+  AND c.type = 'in'
+GROUP BY Day
+ORDER BY Day;
+```
+
+**Запрос для RT по часам:**
+```sql
+SELECT
+  DATE(c.assign_date) AS Day,
+
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=0  THEN c.resolution_time_total ELSE NULL END ) ) ) AS `0:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=1  THEN c.resolution_time_total ELSE NULL END ) ) ) AS `1:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=2  THEN c.resolution_time_total ELSE NULL END ) ) ) AS `2:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=3  THEN c.resolution_time_total ELSE NULL END ) ) ) AS `3:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=4  THEN c.resolution_time_total ELSE NULL END ) ) ) AS `4:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=5  THEN c.resolution_time_total ELSE NULL END ) ) ) AS `5:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=6  THEN c.resolution_time_total ELSE NULL END ) ) ) AS `6:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=7  THEN c.resolution_time_total ELSE NULL END ) ) ) AS `7:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=8  THEN c.resolution_time_total ELSE NULL END ) ) ) AS `8:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=9  THEN c.resolution_time_total ELSE NULL END ) ) ) AS `9:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=10 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `10:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=11 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `11:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=12 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `12:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=13 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `13:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=14 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `14:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=15 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `15:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=16 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `16:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=17 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `17:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=18 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `18:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=19 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `19:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=20 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `20:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=21 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `21:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=22 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `22:00`,
+  SEC_TO_TIME( ROUND( AVG( CASE WHEN HOUR(c.assign_date)=23 THEN c.resolution_time_total ELSE NULL END ) ) ) AS `23:00`
+
+FROM chat_report c
+WHERE c.assign_date >= '2025-05-15 00:00:00'
+  AND c.assign_date <= '2025-05-25 23:59:59'
+  AND c.type = 'in'
+GROUP BY Day
+ORDER BY Day;
+```
+
+**Запрос для количества агентов по часам:**
+```sql
+SELECT
+  t.Day,
+  
+  COUNT(DISTINCT CASE WHEN t.Hour = 0  THEN t.user_id ELSE NULL END) AS `0:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 1  THEN t.user_id ELSE NULL END) AS `1:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 2  THEN t.user_id ELSE NULL END) AS `2:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 3  THEN t.user_id ELSE NULL END) AS `3:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 4  THEN t.user_id ELSE NULL END) AS `4:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 5  THEN t.user_id ELSE NULL END) AS `5:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 6  THEN t.user_id ELSE NULL END) AS `6:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 7  THEN t.user_id ELSE NULL END) AS `7:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 8  THEN t.user_id ELSE NULL END) AS `8:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 9  THEN t.user_id ELSE NULL END) AS `9:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 10 THEN t.user_id ELSE NULL END) AS `10:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 11 THEN t.user_id ELSE NULL END) AS `11:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 12 THEN t.user_id ELSE NULL END) AS `12:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 13 THEN t.user_id ELSE NULL END) AS `13:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 14 THEN t.user_id ELSE NULL END) AS `14:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 15 THEN t.user_id ELSE NULL END) AS `15:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 16 THEN t.user_id ELSE NULL END) AS `16:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 17 THEN t.user_id ELSE NULL END) AS `17:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 18 THEN t.user_id ELSE NULL END) AS `18:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 19 THEN t.user_id ELSE NULL END) AS `19:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 20 THEN t.user_id ELSE NULL END) AS `20:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 21 THEN t.user_id ELSE NULL END) AS `21:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 22 THEN t.user_id ELSE NULL END) AS `22:00`,
+  COUNT(DISTINCT CASE WHEN t.Hour = 23 THEN t.user_id ELSE NULL END) AS `23:00`
+
+FROM (
+  
+  SELECT
+    DATE(answer_date)       AS Day,
+    HOUR(answer_date)       AS Hour,
+    user_id
+  FROM call_report
+  WHERE answer_date >= '2025-05-15 00:00:00'
+    AND answer_date <= '2025-05-25 23:59:59'
+    AND type = 'in'
+    AND queue_name = 'm10'
+  
+  UNION
+  
+  SELECT
+    DATE(assign_date)       AS Day,
+    HOUR(assign_date)       AS Hour,
+    user_id
+  FROM chat_report
+  WHERE assign_date >= '2025-05-15 00:00:00'
+    AND assign_date <= '2025-05-25 23:59:59'
+    AND agent_frt > 0
+
+) AS t
+
+GROUP BY t.Day
+ORDER BY t.Day;
+```

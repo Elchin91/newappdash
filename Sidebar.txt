@@ -1,0 +1,76 @@
+1. Фильтр по очередям (Queue Filter)
+<div id="queue-filter">
+    <div class="nav-title">Queues</div>
+    <button id="queue-all" class="tab-link active">All queues</button>
+    <button id="queue-m10" class="tab-link">m10</button>
+    <button id="queue-aml" class="tab-link">AML</button>
+</div>
+
+2. Переключатель представлений (Dashboard Views)
+<div class="nav-title">Dashboard</div>
+<div class="view-switch">
+    <button id="view-daily" class="tab-link active">Daily</button>
+    <button id="view-hourly" class="tab-link">Hourly</button>
+    <button id="view-monthly" class="tab-link">Monthly</button>
+    <button id="view-classifiers" class="tab-link">Classifiers</button>
+    <button id="view-online" class="tab-link">Online</button>
+</div>
+
+3. Блок метрик (Metrics)
+<div class="nav-title">METRICS</div>
+<div id="metrics-block">
+    <!-- Стандартные метрики -->
+    <div id="metrics-default">
+        <a class="tab-link active" data-tab="calls">Calls</a>
+        <a class="tab-link" data-tab="aht">AHT</a>
+        <a class="tab-link" data-tab="sl">SL</a>
+        <a class="tab-link" data-tab="chats">Chats</a>
+        <a class="tab-link" data-tab="frt">FRT</a>
+        <a class="tab-link" data-tab="rt">RT</a>
+        <a class="tab-link" data-tab="abandoned">Abandoned</a>
+        <a class="tab-link" data-tab="total">Total</a>
+        <a class="tab-link" data-tab="detailed_daily">Detailed daily</a>
+    </div>
+    
+    <!-- Метрики классификаторов -->
+    <div id="metrics-classifiers">
+        <a class="tab-link" data-tab="call_classifiers">Call</a>
+        <a class="tab-link" data-tab="chat_classifiers">Chat</a>
+        <a class="tab-link" data-tab="overall_classifiers">Overall</a>
+        <a class="tab-link" data-tab="topics_classifiers">Topics</a>
+        <a class="tab-link" data-tab="subtopics_daily">Subtopics (daily)</a>
+        <a class="tab-link" data-tab="subtopics_total">Subtopics (total)</a>
+    </div>
+</div>
+
+
+4. Селектор диапазона дат
+<label for="start-date">Start Date:</label>
+<input type="date" id="start-date" class="form-control" />
+<label for="end-date" class="mt-2">End Date:</label>
+<input type="date" id="end-date" class="form-control" />
+<button id="apply-filters" class="btn btn-primary mt-3">Apply</button>
+
+
+5. Селектор месяцев (для Monthly view)
+<div id="month-selector-container" style="display: none;">
+    <label for="month-selector">Select Month:</label>
+    <select id="month-selector" class="form-select mt-2">
+        <!-- Динамически заполняется -->
+    </select>
+</div>
+
+
+6. Кнопка для активации и деактивации тёмного режима
+<button class="theme-toggle" id="theme-toggle">🌓 Dark mode</button>
+
+
+7. Логотип компании
+<div id="logo-container">
+    <img src="https://static.tildacdn.one/tild6263-6436-4064-b637-633061366565/M10.svg" 
+         alt="Logo" style="width: 200px; height: auto;">
+</div>
+
+
+
+
