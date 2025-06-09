@@ -29,17 +29,13 @@ const getCurrentMonth = () => {
 };
 
 function App() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  // Инициализация темы при первом запуске
-  useEffect(() => {
-    const root = document.documentElement;
-    if (isDarkMode) {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const stored = localStorage.getItem('darkMode');
+    if (stored !== null) {
+      return stored === 'true';
     }
-  }, []); // Выполняется только при первом рендере
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
   const [activeQueue, setActiveQueue] = useState<QueueFilter>('all');
   const [activeView, setActiveView] = useState<DashboardView>('daily');
   const [activeStandardMetric, setActiveStandardMetric] = useState<StandardMetric>('calls');
@@ -58,10 +54,11 @@ function App() {
     } else {
       root.classList.remove('dark');
     }
+    localStorage.setItem('darkMode', String(isDarkMode));
   }, [isDarkMode]);
 
   const handleToggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
+    setIsDarkMode(prev => !prev);
   };
 
   const handleApplyFilters = () => {
